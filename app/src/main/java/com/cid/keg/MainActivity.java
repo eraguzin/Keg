@@ -1,5 +1,7 @@
 package com.cid.keg;
 
+//things have changed!
+
 import android.support.annotation.RequiresPermission;
 import android.util.Log;
 

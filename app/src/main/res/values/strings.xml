@@ -5,6 +5,8 @@
     <string name="stop">Stop</string>
     <string name="status">Status</string>
 
+    <string name="randomstuff">Willthisbeused</string>
+
     <string name="basic">Basic</string>
     <string name="debug">Debug</string>
     <string name="connect">Connect</string>
