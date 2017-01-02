@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">Keg</string>
+    <string name="start">Start</string>
+    <string name="send">Send</string>
+    <string name="stop">Stop</string>
+    <string name="status">Status</string>
+
+    <string name="basic">Basic</string>
+    <string name="debug">Debug</string>
+    <string name="connect">Connect</string>
+    <string name="basic_pressure">Select Pressure (PSI)</string>
+    <string name="period">.</string>
+    <string name="dig1">Digit1</string>
+    <string name="dig2">Digit2</string>
+    <string name="dig3">Digit3</string>
+    <string name="dig4">Digit4</string>
+
+
+    <string name="refpressure">Ref_Pressure</string>
+    <string name="pressure">Pressure</string>
+    <string name="error">Error</string>
+    <string name="kP">kP</string>
+    <string name="kI">kI</string>
+    <string name="kD">kD</string>
+    <string name="P">P</string>
+    <string name="I">I</string>
+    <string name="D">D</string>
+    <string name="integral">Integral</string>
+    <string name="pump">Pump</string>
+    <string name="brightness">Brightness</string>
+    <string name="update_wait">Update_Wait</string>
+    <string name="set_time">Set_Time</string>
+    <string name="disp_update">Disp_Update</string>
+
+    <string name="from_arduino">From</string>
+    <string name="to_arduino">To</string>
+
+    <string name="waiting">Waiting for next</string>
+
+</resources>

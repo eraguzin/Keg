@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/tableLayout1"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+
+        <LinearLayout android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:layout_width="0px"
+            android:layout_height="0px" >
+            <requestFocus />
+        </LinearLayout>
+
+        <TableRow
+            android:id="@+id/SystemRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <Button android:id="@+id/buttonStart"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/connect"
+                android:onClick="onClickStart"
+                android:gravity="center_vertical|center_horizontal"
+                style="?android:attr/buttonBarButtonStyle"/>
+
+            <Switch android:id="@+id/buttonSwitch"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/basic"
+                android:onClick="onClickSwitch"
+                android:gravity="center_vertical|center_horizontal"
+                style="?android:attr/buttonBarButtonStyle"/>
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/PressureRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <ImageView
+                android:id="@+id/Display1"
+                android:contentDescription="@string/dig1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/zero" />
+
+            <ImageView
+                android:id="@+id/Display2"
+                android:contentDescription="@string/dig2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/zero" />
+
+            <TextView
+                android:id="@+id/Period2"
+                android:layout_width="wrap_content"
+                android:layout_height="55dp"
+                android:textSize="50sp"
+                android:text="@string/period" />
+
+            <ImageView
+                android:id="@+id/Display3"
+                android:contentDescription="@string/dig3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/zero" />
+
+            <ImageView
+                android:id="@+id/Display4"
+                android:contentDescription="@string/dig4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/zero" />
+
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/BrightnessRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <SeekBar
+                android:id="@+id/BrightnessSeeker"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/brightness"
+                android:max="100"
+                android:progress="50"/>
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/PressureSelect"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/BasicPressure"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/basic_pressure" />
+
+            <NumberPicker
+                android:id="@+id/Digit1"
+                android:layout_weight=".5"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"/>
+
+            <NumberPicker
+                android:id="@+id/Digit2"
+                android:layout_weight=".5"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/Period"
+                android:layout_weight=".1"
+                android:layout_width="0dip"
+                android:layout_height="55dp"
+                android:textSize="50sp"
+                android:text="@string/period" />
+
+            <NumberPicker
+                android:id="@+id/Digit3"
+                android:layout_weight=".5"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"/>
+
+            <NumberPicker
+                android:id="@+id/Digit4"
+                android:layout_weight=".5"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"/>
+
+            <Button android:id="@+id/SendPressure"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/send"
+                android:onClick="onClickSend"
+                style="?android:attr/buttonBarButtonStyle"/>
+        </TableRow>
+
+    </TableLayout>
+
+</ScrollView>
