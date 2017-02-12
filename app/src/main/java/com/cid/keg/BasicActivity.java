@@ -55,10 +55,14 @@ public class BasicActivity extends Activity {
     NumberPicker Digit1, Digit2, Digit3, Digit4;
     ImageView Num1, Num2, Num3, Num4;
 
+    BasicActivity mn;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_basic);
+
+        mn=BasicActivity.this;
 
         //System Views
         startButton = (Button) findViewById(R.id.buttonStart);
@@ -88,10 +92,12 @@ public class BasicActivity extends Activity {
                 String string = "@g";
                 string = string.concat(Integer.toString(progressChanged));
                 string = string.concat("!");
-                try {
-                    outputStream.write(string.getBytes());
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (deviceConnected) {
+                    try {
+                        outputStream.write(string.getBytes());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
@@ -123,6 +129,52 @@ public class BasicActivity extends Activity {
 
     }
 
+    void beginConnection() {
+        final Handler handler = new Handler();
+        stopStartThread = false;
+        buffer = new byte[1024];
+        final Thread thread = new Thread(new Runnable() {
+            public void run() {
+                while (!Thread.currentThread().isInterrupted() && !stopStartThread) {
+                    if (BTinit()) {
+                        Log.d("", "Initialized");
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException e) {
+                            Log.d("d", "Interrupted");
+                        }
+                        if (BTconnect()) {
+                            Log.d("", "Connected");
+                            deviceConnected = true;
+                            handler.post(new Runnable() {
+                                             public void run() {
+                                                 startButton.setText(getString(R.string.connected));
+                                             }
+                                         }
+                            );
+                            stopStartThread = true;
+                            stopThread = false;
+                            Log.d("d", "Communication Opened");
+                        } else {
+                            Log.d("d", "No Communication");
+                        }
+
+                    } else {
+                        Log.d("d", "No Connection");
+                    }
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                        Log.d("d", "Interrupted");
+                    }
+                }
+            }
+        }
+        );
+
+        thread.start();
+    }
+
     public boolean BTinit() {
         boolean found = false;
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -141,7 +193,11 @@ public class BasicActivity extends Activity {
             }
             Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
             if (bondedDevices.isEmpty()) {
-                Toast.makeText(getApplicationContext(), "Please Pair the Device first", Toast.LENGTH_SHORT).show();
+                mn.runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "Please Pair the Device first", Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else {
                 for (BluetoothDevice iterator : bondedDevices) {
                     Log.d("ADD", DEVICE_ADDRESS);
@@ -196,45 +252,6 @@ public class BasicActivity extends Activity {
         }
     }
 
-    void beginConnection() {
-        stopStartThread = false;
-        buffer = new byte[1024];
-        final Thread thread = new Thread(new Runnable() {
-            public void run() {
-                while (!Thread.currentThread().isInterrupted() && !stopStartThread) {
-                    if (BTinit()) {
-                        Log.d("", "Initialized");
-                        try {
-                            Thread.sleep(50);
-                        } catch (InterruptedException e) {
-                            Log.d("d", "Interrupted");
-                        }
-                        if (BTconnect()) {
-                            Log.d("", "Connected");
-                            deviceConnected = true;
-                            stopStartThread = true;
-                            stopThread = false;
-                            Log.d("d", "Communication Opened");
-                        } else {
-                            Log.d("d", "No Communication");
-                        }
-
-                    } else {
-                        Log.d("d", "No Connection");
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Log.d("d", "Interrupted");
-                    }
-                }
-            }
-        }
-        );
-
-        thread.start();
-    }
-
     void beginListenForData() {
         final Handler handler = new Handler();
         buffer = new byte[1024];
@@ -254,10 +271,19 @@ public class BasicActivity extends Activity {
                             int bytesread = inputStream.read(rawBytes);
                             final String receivedString = new String(rawBytes, "UTF-8");
                             fullString = receivedString;
+                            Log.d("Temporary", fullString);
                             iteration_done = false;
                             while (!iteration_done) {
-                                final String toSend = ProcessIncoming();
+                                String toSend = ProcessIncoming();
                                 if (!saving) {
+                                    Log.d("Finished", toSend);
+                                    //Below is because for some reason, the first returned brightness
+                                    int end_pos = toSend.indexOf(beginning);
+                                    if (end_pos != -1) {
+                                        toSend = toSend.substring(0, end_pos-1);
+                                    }
+                                    //reading after changing the brightness doesn't include the "!" symbol
+                                    Log.d("Processed", toSend);
                                     Integer ViewID = SendToProper(toSend);
                                     if (ViewID != null) {
                                         if (ViewID == 2) {
@@ -299,18 +325,26 @@ public class BasicActivity extends Activity {
                                             );
                                         }
                                         if (ViewID == barBrightness.getId()) {
-                                            final Integer Brightness = Integer.parseInt(toSend.substring(1));
-                                            handler.post(new Runnable() {
-                                                             public void run() {
-                                                                 barBrightness.setProgress(Brightness);
+                                            try {
+                                                final Integer Brightness = Integer.parseInt(toSend.substring(1));
+                                                handler.post(new Runnable() {
+                                                                 public void run() {
+                                                                     barBrightness.setProgress(Brightness);
+                                                                 }
                                                              }
-                                                         }
-                                            );
+                                                );
+                                            }
+                                            catch(NumberFormatException e){
+                                                //this happens for the first returned brightness reading after changing the brightness
+                                            }
                                         }
                                     }
 
                                 }
                             }
+
+                        }
+                        else{
 
                         }
                     } catch (IOException ex) {
@@ -444,11 +478,12 @@ public class BasicActivity extends Activity {
         sendText += Integer.toString(Num3);
         sendText += Integer.toString(Num4);
         sendText += "!";
-        try {
-            outputStream.write(sendText.getBytes());
-        }
-        catch (IOException e) {
-            e.printStackTrace();
+        if (deviceConnected) {
+            try {
+                outputStream.write(sendText.getBytes());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

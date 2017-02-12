@@ -549,6 +549,225 @@
                 style="?android:attr/buttonBarButtonStyle"/>
         </TableRow>
 
+        <TableRow
+            android:id="@+id/dPRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labeldP"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/dP" />
+
+            <TextView
+                android:id="@+id/receivedP"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/dTRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labeldT"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/dT" />
+
+            <TextView
+                android:id="@+id/receivedT"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/modeRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labelmode"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/mode" />
+
+            <TextView
+                android:id="@+id/receivemode"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/start_pRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labelstart_p"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/start_p" />
+
+            <TextView
+                android:id="@+id/receivestart_p"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/BlowRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labelBlow"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/blow" />
+
+            <TextView
+                android:id="@+id/receiveBlow"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+
+            <EditText android:id="@+id/fieldBlow"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:inputType="number"
+                android:tag="q"
+                android:hint="@string/to_arduino" />
+
+            <Button android:id="@+id/buttonBlow"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/send"
+                android:onClick="onClickParameter"
+                style="?android:attr/buttonBarButtonStyle"/>
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/TTRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labelTT"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/test_time" />
+
+            <TextView
+                android:id="@+id/receiveTT"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+
+            <EditText android:id="@+id/fieldTT"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:inputType="number"
+                android:tag="h"
+                android:hint="@string/to_arduino" />
+
+            <Button android:id="@+id/buttonTT"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/send"
+                android:onClick="onClickParameter"
+                style="?android:attr/buttonBarButtonStyle"/>
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/battRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labelbatt"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/batt" />
+
+            <TextView
+                android:id="@+id/receivebatt"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/TestWaitRow"
+            style="?android:attr/buttonBarButtonStyle">
+
+            <TextView
+                android:id="@+id/labelTestWait"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/test_wait" />
+
+            <TextView
+                android:id="@+id/receiveTestWait"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:hint="@string/from_arduino" />
+
+            <EditText android:id="@+id/fieldTestWait"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:inputType="number"
+                android:tag="r"
+                android:hint="@string/to_arduino" />
+
+            <Button android:id="@+id/buttonTestWait"
+                android:layout_weight="1"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:text="@string/send"
+                android:onClick="onClickParameter"
+                style="?android:attr/buttonBarButtonStyle"/>
+        </TableRow>
+
     </TableLayout>
 
 </ScrollView>

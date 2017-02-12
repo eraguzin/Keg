@@ -1,7 +1,5 @@
 package com.cid.keg;
 
-//things have changed!
-
 import android.support.annotation.RequiresPermission;
 import android.util.Log;
 
@@ -52,7 +50,8 @@ public class MainActivity extends Activity {
 
     TextView pressureRefReceive,pressureReceive,errorReceive,kPReceive,kIReceive,kDReceive,
             PReceive,IReceive,DReceive,IntegralReceive,PumpReceive,BrightnessReceive,UpdateReceive,
-            SetReceive,DispReceive;
+            SetReceive,DispReceive,BattReceive,dPReceive,dTReceive,ModeReceive,Start_pReceive,
+            BlowReceive,TTReceive,TestWaitReceive;
 
     Switch switchButton;
 
@@ -86,6 +85,15 @@ public class MainActivity extends Activity {
         UpdateReceive = (TextView) findViewById(R.id.receiveUpdate);
         SetReceive = (TextView) findViewById(R.id.receiveSet);
         DispReceive = (TextView) findViewById(R.id.receiveDisp);
+        BattReceive = (TextView) findViewById(R.id.receivebatt);
+        dPReceive = (TextView) findViewById(R.id.receivedP);
+        dTReceive = (TextView) findViewById(R.id.receivedT);
+        ModeReceive = (TextView) findViewById(R.id.receivemode);
+        Start_pReceive = (TextView) findViewById(R.id.receivestart_p);
+        BlowReceive = (TextView) findViewById(R.id.receiveBlow);
+        TTReceive = (TextView) findViewById(R.id.receiveTT);
+        TestWaitReceive = (TextView) findViewById(R.id.receiveTestWait);
+
         switchButton = (Switch) findViewById(R.id.buttonSwitch);
         switchButton.setChecked(false);
     }
@@ -389,12 +397,44 @@ public class MainActivity extends Activity {
                 view = IntegralReceive.getId();
                 break;
 
+            case 'w':
+                view = BattReceive.getId();
+                break;
+
             case 'x':
                 view = PumpReceive.getId();
                 break;
 
+            case 'q':
+                view = BlowReceive.getId();
+                break;
+
+            case 'h':
+                view = TTReceive.getId();
+                break;
+
+            case 'f':
+                view = dPReceive.getId();
+                break;
+
+            case 'j':
+                view = dTReceive.getId();
+                break;
+
+            case 'e':
+                view = Start_pReceive.getId();
+                break;
+
+            case 'k':
+                view = ModeReceive.getId();
+                break;
+
+            case 'r':
+                view = TestWaitReceive.getId();
+                break;
+
             case '0':
-                view = PumpReceive.getId();
+                view = null;
                 break;
 
             default:
