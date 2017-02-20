@@ -53,7 +53,7 @@ public class BasicActivity extends Activity {
     TextView pressureRefReceive, pressureReceive;
     SeekBar barBrightness;
     NumberPicker Digit1, Digit2, Digit3, Digit4;
-    ImageView Num1, Num2, Num3, Num4;
+    ImageView Num1, Num2, Num3, Num4, Fullness;
 
     BasicActivity mn;
 
@@ -105,6 +105,7 @@ public class BasicActivity extends Activity {
         Num2 = (ImageView) findViewById(R.id.Display2);
         Num3 = (ImageView) findViewById(R.id.Display3);
         Num4 = (ImageView) findViewById(R.id.Display4);
+        Fullness = (ImageView) findViewById(R.id.Fullness);
 
         Digit1 = (NumberPicker) findViewById(R.id.Digit1);
         Digit2 = (NumberPicker) findViewById(R.id.Digit2);
@@ -276,7 +277,6 @@ public class BasicActivity extends Activity {
                             while (!iteration_done) {
                                 String toSend = ProcessIncoming();
                                 if (!saving) {
-                                    Log.d("Finished", toSend);
                                     //Below is because for some reason, the first returned brightness
                                     int end_pos = toSend.indexOf(beginning);
                                     if (end_pos != -1) {
@@ -284,7 +284,10 @@ public class BasicActivity extends Activity {
                                     }
                                     //reading after changing the brightness doesn't include the "!" symbol
                                     Log.d("Processed", toSend);
-                                    Integer ViewID = SendToProper(toSend);
+                                    Integer ViewID = null;
+                                    if (toSend.length()>0){
+                                        ViewID = SendToProper(toSend);
+                                    }
                                     if (ViewID != null) {
                                         if (ViewID == 2) {
                                             Character Char1 = toSend.charAt(1);
@@ -324,7 +327,7 @@ public class BasicActivity extends Activity {
                                                          }
                                             );
                                         }
-                                        if (ViewID == barBrightness.getId()) {
+                                        else if (ViewID == barBrightness.getId()) {
                                             try {
                                                 final Integer Brightness = Integer.parseInt(toSend.substring(1));
                                                 handler.post(new Runnable() {
@@ -337,6 +340,24 @@ public class BasicActivity extends Activity {
                                             catch(NumberFormatException e){
                                                 //this happens for the first returned brightness reading after changing the brightness
                                             }
+                                        }
+                                        else if (ViewID == Fullness.getId()) {
+                                            try {
+                                                final Integer fullness = Integer.parseInt(toSend.substring(1));
+                                                final Integer ImageNum = doFullness(fullness);
+                                                handler.post(new Runnable() {
+                                                                 public void run() {
+                                                                     Fullness.setImageResource(ImageNum);
+                                                                 }
+                                                             }
+                                                );
+                                            }
+                                            catch(NumberFormatException e){
+                                                //this happens for the first returned brightness reading after changing the brightness
+                                            }
+                                        }
+                                        else{
+                                            Log.d("d", "None of them were triggered!");
                                         }
                                     }
 
@@ -442,6 +463,10 @@ public class BasicActivity extends Activity {
                 view = barBrightness.getId();
                 break;
 
+            case 'v':
+                view = Fullness.getId();
+                break;
+
             case 'y':
                 view = null;
                 break;
@@ -531,6 +556,37 @@ public class BasicActivity extends Activity {
                 break;
 
             default:
+                break;
+        }
+        return theID;
+
+    }
+
+    public Integer doFullness (int num){
+        Integer theID;
+        switch (num) {
+            case 100:
+                theID = getResources().getIdentifier("full", "drawable", getPackageName());
+                break;
+
+            case 75:
+                theID = getResources().getIdentifier("a34", "drawable", getPackageName());
+                break;
+
+            case 50:
+                theID = getResources().getIdentifier("a12", "drawable", getPackageName());
+                break;
+
+            case 25:
+                theID = getResources().getIdentifier("a14", "drawable", getPackageName());
+                break;
+
+            case 0:
+                theID = getResources().getIdentifier("empty", "drawable", getPackageName());
+                break;
+
+            default:
+                theID = getResources().getIdentifier("full", "drawable", getPackageName());
                 break;
         }
         return theID;

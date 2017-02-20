@@ -3,7 +3,7 @@
     <string name="start">Start</string>
     <string name="send">Send</string>
     <string name="stop">Stop</string>
-    <string name="status">Status</string>
+    <string name="status">Y for basic</string>
 
     <string name="connected">Connected</string>
 
@@ -41,6 +41,7 @@
     <string name="test_time">Test Time</string>
     <string name="batt">Battery</string>
     <string name="test_wait">Test wait</string>
+    <string name="fullness">Fullness</string>
 
     <string name="from_arduino">From</string>
     <string name="to_arduino">To</string>

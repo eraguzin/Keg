@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
     TextView pressureRefReceive,pressureReceive,errorReceive,kPReceive,kIReceive,kDReceive,
             PReceive,IReceive,DReceive,IntegralReceive,PumpReceive,BrightnessReceive,UpdateReceive,
             SetReceive,DispReceive,BattReceive,dPReceive,dTReceive,ModeReceive,Start_pReceive,
-            BlowReceive,TTReceive,TestWaitReceive;
+            BlowReceive,TTReceive,TestWaitReceive,FullnessReceive;
 
     Switch switchButton;
 
@@ -93,6 +93,7 @@ public class MainActivity extends Activity {
         BlowReceive = (TextView) findViewById(R.id.receiveBlow);
         TTReceive = (TextView) findViewById(R.id.receiveTT);
         TestWaitReceive = (TextView) findViewById(R.id.receiveTestWait);
+        FullnessReceive = (TextView) findViewById(R.id.receiveFullness);
 
         switchButton = (Switch) findViewById(R.id.buttonSwitch);
         switchButton.setChecked(false);
@@ -224,14 +225,6 @@ public class MainActivity extends Activity {
                                     }
 
                                 }
-                                else {
-                                    handler.post(new Runnable() {
-                                                     public void run() {
-                                                         Status1.setText(getString(R.string.waiting));
-                                                     }
-                                                 }
-                                    );
-                                }
                             }
 
                         }
@@ -255,13 +248,14 @@ public class MainActivity extends Activity {
     public void onClickSend(View view) {
         String string = rawOut.getText().toString();
         string = string.concat("\n");
-        try {
-            outputStream.write(string.getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(deviceConnected) {
+            try {
+                outputStream.write(string.getBytes());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Status1.setText(string);
         }
-        Status1.setText(string);
-
     }
 
     public void onClickStop(View view) throws IOException {
@@ -307,7 +301,9 @@ public class MainActivity extends Activity {
                 int end_pos = fullString.indexOf(ending);
                 if (end_pos != -1) {
                     singleCommand = fullString.substring(start_pos + 1, end_pos);
-                    fullString = fullString.substring(end_pos+1);
+                    if (fullString.length() >= (end_pos+1)){
+                        fullString = fullString.substring(end_pos+1);
+                    }
                     return singleCommand;
                 } else {
                     singleCommand = fullString.substring(start_pos + 1);
@@ -431,6 +427,14 @@ public class MainActivity extends Activity {
 
             case 'r':
                 view = TestWaitReceive.getId();
+                break;
+
+            case 'v':
+                view = FullnessReceive.getId();
+                break;
+
+            case 'X':
+                view = Status1.getId();
                 break;
 
             case '0':

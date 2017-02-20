@@ -42,7 +42,11 @@
 
         <TableRow
             android:id="@+id/PressureRow"
-            style="?android:attr/buttonBarButtonStyle">
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:shrinkColumns="*"
+            >
 
             <ImageView
                 android:id="@+id/Display1"
@@ -146,6 +150,15 @@
                 android:onClick="onClickSend"
                 style="?android:attr/buttonBarButtonStyle"/>
         </TableRow>
+
+
+        <ImageView
+                android:id="@+id/Fullness"
+                android:contentDescription="@string/fullness"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/full" />
+
 
     </TableLayout>
 
