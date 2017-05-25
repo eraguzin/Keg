@@ -29,6 +29,7 @@ import java.util.UUID;
 public class BasicActivity extends Activity {
     //    private final String DEVICE_NAME="MyBTBee";
     private static final String DEVICE_ADDRESS = "20:14:10:30:05:38";
+    private static final String DEVICE_NAME = "keg";
     private final UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");//Serial Port Service ID
     private BluetoothDevice device;
     private BluetoothSocket socket;
@@ -201,9 +202,9 @@ public class BasicActivity extends Activity {
                 });
             } else {
                 for (BluetoothDevice iterator : bondedDevices) {
-                    Log.d("ADD", DEVICE_ADDRESS);
-                    Log.d("GET", iterator.getAddress());
-                    if (iterator.getAddress().equals(DEVICE_ADDRESS)) {
+                    Log.d("ADD", DEVICE_NAME);
+                    Log.d("GET", iterator.getName());
+                    if (iterator.getName().equals(DEVICE_NAME)) {
                         device = iterator;
                         found = true;
                         break;
@@ -254,96 +255,98 @@ public class BasicActivity extends Activity {
     }
 
     void beginListenForData() {
+        Log.d("d", "Shit Started");
         final Handler handler = new Handler();
         buffer = new byte[1024];
         final Thread thread = new Thread(new Runnable() {
             public void run() {
-                Log.d("d", "Thread Opened");
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    Log.d("d", "Interrupted");
-                }
-                while (!Thread.currentThread().isInterrupted() && !stopThread) {
+                while (!Thread.currentThread().isInterrupted()) {
+
+                    Log.d("d", "Thread Opened");
                     try {
-                        int byteCount = inputStream.available();
-                        if (byteCount > 0) {
-                            byte[] rawBytes = new byte[byteCount];
-                            int bytesread = inputStream.read(rawBytes);
-                            final String receivedString = new String(rawBytes, "UTF-8");
-                            fullString = receivedString;
-                            Log.d("Temporary", fullString);
-                            iteration_done = false;
-                            while (!iteration_done) {
-                                String toSend = ProcessIncoming();
-                                if (!saving) {
-                                    //Below is because for some reason, the first returned brightness
-                                    int end_pos = toSend.indexOf(beginning);
-                                    if (end_pos != -1) {
-                                        toSend = toSend.substring(0, end_pos-1);
-                                    }
-                                    //reading after changing the brightness doesn't include the "!" symbol
-                                    Log.d("Processed", toSend);
-                                    Integer ViewID = null;
-                                    if (toSend.length()>0){
-                                        ViewID = SendToProper(toSend);
-                                    }
-                                    if (ViewID != null) {
-                                        if (ViewID == 2) {
-                                            Character Char1 = toSend.charAt(1);
-                                            int Digit1 = Character.getNumericValue(Char1);
-                                            final Integer ImageNum = doImages(Digit1);
-                                            handler.post(new Runnable() {
-                                                             public void run() {
-                                                                 Num1.setImageResource(ImageNum);
-                                                             }
-                                                         }
-                                            );
-                                            Character Char2 = toSend.charAt(2);
-                                            int Digit2 = Character.getNumericValue(Char2);
-                                            final Integer ImageNum2 = doImages(Digit2);
-                                            handler.post(new Runnable() {
-                                                             public void run() {
-                                                                 Num2.setImageResource(ImageNum2);
-                                                             }
-                                                         }
-                                            );
-                                            Character Char3 = toSend.charAt(4);
-                                            int Digit3 = Character.getNumericValue(Char3);
-                                            final Integer ImageNum3 = doImages(Digit3);
-                                            handler.post(new Runnable() {
-                                                             public void run() {
-                                                                 Num3.setImageResource(ImageNum3);
-                                                             }
-                                                         }
-                                            );
-                                            Character Char4 = toSend.charAt(5);
-                                            int Digit4 = Character.getNumericValue(Char4);
-                                            final Integer ImageNum4 = doImages(Digit4);
-                                            handler.post(new Runnable() {
-                                                             public void run() {
-                                                                 Num4.setImageResource(ImageNum4);
-                                                             }
-                                                         }
-                                            );
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        Log.d("d", "Interrupted");
+                    }
+                    while (!stopThread) {
+                        try {
+                            int byteCount = inputStream.available();
+                            if (byteCount > 0) {
+                                byte[] rawBytes = new byte[byteCount];
+                                int bytesread = inputStream.read(rawBytes);
+                                final String receivedString = new String(rawBytes, "UTF-8");
+                                fullString = receivedString;
+                                Log.d("Temporary", fullString);
+                                iteration_done = false;
+                                while (!iteration_done) {
+                                    String toSend = ProcessIncoming();
+                                    if (!saving) {
+                                        //Below is because for some reason, the first returned brightness
+                                        int end_pos = toSend.indexOf(beginning);
+                                        if (end_pos != -1) {
+                                            toSend = toSend.substring(0, end_pos - 1);
                                         }
-                                        else if (ViewID == barBrightness.getId()) {
-                                            try {
-                                                final Integer Brightness = Integer.parseInt(toSend.substring(1));
+                                        //reading after changing the brightness doesn't include the "!" symbol
+                                        Log.d("Processed", toSend);
+                                        Integer ViewID = null;
+                                        if (toSend.length() > 0) {
+                                            ViewID = SendToProper(toSend);
+                                        }
+                                        if (ViewID != null) {
+                                            if (ViewID == 2) {
+                                                Character Char1 = toSend.charAt(1);
+                                                int Digit1 = Character.getNumericValue(Char1);
+                                                final Integer ImageNum = doImages(Digit1);
                                                 handler.post(new Runnable() {
                                                                  public void run() {
-                                                                     barBrightness.setProgress(Brightness);
+                                                                     Num1.setImageResource(ImageNum);
                                                                  }
                                                              }
                                                 );
-                                            }
-                                            catch(NumberFormatException e){
-                                                //this happens for the first returned brightness reading after changing the brightness
-                                            }
-                                        }
-                                        else if (ViewID == Fullness.getId()) {
-                                            try {
+                                                Character Char2 = toSend.charAt(2);
+                                                int Digit2 = Character.getNumericValue(Char2);
+                                                final Integer ImageNum2 = doImages(Digit2);
+                                                handler.post(new Runnable() {
+                                                                 public void run() {
+                                                                     Num2.setImageResource(ImageNum2);
+                                                                 }
+                                                             }
+                                                );
+                                                Character Char3 = toSend.charAt(4);
+                                                int Digit3 = Character.getNumericValue(Char3);
+                                                final Integer ImageNum3 = doImages(Digit3);
+                                                handler.post(new Runnable() {
+                                                                 public void run() {
+                                                                     Num3.setImageResource(ImageNum3);
+                                                                 }
+                                                             }
+                                                );
+                                                Character Char4 = toSend.charAt(5);
+                                                int Digit4 = Character.getNumericValue(Char4);
+                                                final Integer ImageNum4 = doImages(Digit4);
+                                                handler.post(new Runnable() {
+                                                                 public void run() {
+                                                                     Num4.setImageResource(ImageNum4);
+                                                                 }
+                                                             }
+                                                );
+                                            } else if (ViewID == barBrightness.getId()) {
+                                                try {
+                                                    final Integer Brightness = Integer.parseInt(toSend.substring(1));
+                                                    handler.post(new Runnable() {
+                                                                     public void run() {
+                                                                         barBrightness.setProgress(Brightness);
+                                                                     }
+                                                                 }
+                                                    );
+                                                } catch (NumberFormatException e) {
+                                                    //this happens for the first returned brightness reading after changing the brightness
+                                                }
+                                            } else if (ViewID == Fullness.getId()) {
+                                                Log.d("d", "Fullness has been recognized");
                                                 final Integer fullness = Integer.parseInt(toSend.substring(1));
+                                                String thaa = fullness.toString();
+                                                Log.d("Fullness is", thaa);
                                                 final Integer ImageNum = doFullness(fullness);
                                                 handler.post(new Runnable() {
                                                                  public void run() {
@@ -351,28 +354,29 @@ public class BasicActivity extends Activity {
                                                                  }
                                                              }
                                                 );
-                                            }
-                                            catch(NumberFormatException e){
-                                                //this happens for the first returned brightness reading after changing the brightness
+                                            } else {
+                                                Log.d("d", "None of them were triggered!");
                                             }
                                         }
-                                        else{
-                                            Log.d("d", "None of them were triggered!");
-                                        }
+
                                     }
-
                                 }
+
+                            } else {
+
                             }
-
+                        } catch (IOException ex) {
+                            stopThread = true;
                         }
-                        else{
-
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            Log.d("d", "Interrupted");
                         }
-                    } catch (IOException ex) {
-                        stopThread = true;
                     }
                     try {
-                        Thread.sleep(10);
+                        Thread.sleep(2000);
+                        Log.d("d", "Try again soon");
                     } catch (InterruptedException e) {
                         Log.d("d", "Interrupted");
                     }
@@ -380,7 +384,6 @@ public class BasicActivity extends Activity {
             }
         }
         );
-
         thread.start();
     }
 
@@ -465,6 +468,7 @@ public class BasicActivity extends Activity {
 
             case 'v':
                 view = Fullness.getId();
+                Log.d("d", "Fullness has been called");
                 break;
 
             case 'y':
@@ -564,6 +568,9 @@ public class BasicActivity extends Activity {
 
     public Integer doFullness (int num){
         Integer theID;
+        Integer tester = num;
+        String send =tester.toString();
+        Log.d("jr", send);
         switch (num) {
             case 100:
                 theID = getResources().getIdentifier("full", "drawable", getPackageName());
