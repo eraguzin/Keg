@@ -407,8 +407,9 @@ public class BasicActivity extends Activity {
                 e.printStackTrace();
             }
         }
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, BLE_Test.class);
         startActivity(intent);
+        finish();
     }
 
     public String ProcessIncoming() {

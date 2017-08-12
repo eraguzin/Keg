@@ -50,4 +50,16 @@
 
     <color name="connectColor">#f00</color>
 
+    <integer-array name="Services">
+        <item>0xDEAD</item>
+        <item>0x180D</item>
+    </integer-array>
+
+    <integer-array name="Characteristics">
+        <item>0xFEED</item>
+        <item>0xAAAA</item>
+        <item>0x2A37</item>
+        <item>0x2A38</item>
+    </integer-array>
+
 </resources>

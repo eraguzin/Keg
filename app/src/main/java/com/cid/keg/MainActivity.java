@@ -26,6 +26,7 @@ import java.util.UUID;
 public class MainActivity extends Activity {
     //    private final String DEVICE_NAME="MyBTBee";
     private static final String DEVICE_ADDRESS="20:14:10:30:05:38";
+    private static final String DEVICE_NAME = "keg";
     private final UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");//Serial Port Service ID
     private BluetoothDevice device;
     private BluetoothSocket socket;
@@ -121,9 +122,9 @@ public class MainActivity extends Activity {
                 Toast.makeText(getApplicationContext(), "Please Pair the Device first", Toast.LENGTH_SHORT).show();
             } else {
                 for (BluetoothDevice iterator : bondedDevices) {
-                    rawIn.append(DEVICE_ADDRESS);
+                    rawIn.append(DEVICE_NAME);
                     rawIn.append(iterator.getAddress());
-                    if (iterator.getAddress().equals(DEVICE_ADDRESS)) {
+                    if (iterator.getAddress().equals(DEVICE_NAME)) {
                         device = iterator;
                         found = true;
                         break;
