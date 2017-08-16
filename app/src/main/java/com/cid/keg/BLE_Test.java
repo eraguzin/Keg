@@ -16,6 +16,7 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -37,7 +38,11 @@ import android.os.Handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -55,14 +60,7 @@ public class BLE_Test extends AppCompatActivity {
     private InputStream inputStream;
 
     boolean deviceConnected=false;
-    byte buffer[];
-    boolean stopThread;
-    String fullString = "";
-    String singleCommand = "";
-    boolean saving=false;
-    boolean iteration_done=false;
-    char beginning='@';
-    char ending='!';
+
 
 
     //System Views
@@ -86,7 +84,7 @@ public class BLE_Test extends AppCompatActivity {
     private List<ScanFilter> filters;
     private BluetoothGatt mGatt;
 
-    private List<BluetoothGattCharacteristic> Charactaristics = new ArrayList<>();
+    private List<BluetoothGattCharacteristic> confirmedCharacteristics = new ArrayList<>();
     private List<BluetoothGattDescriptor> Descr = new ArrayList<>();
 
     @Override
@@ -145,7 +143,7 @@ public class BLE_Test extends AppCompatActivity {
     }
 
     public void onClickSend(View view) {
-        BluetoothGattCharacteristic display = Charactaristics.get(0);
+        BluetoothGattCharacteristic display = confirmedCharacteristics.get(0);
         Log.i("onClickSend", display.getUuid().toString());
         Log.i("onClickSend", Integer.toString(getAssignedNumber(display.getUuid())));
         mGatt.readCharacteristic(display);
@@ -155,13 +153,34 @@ public class BLE_Test extends AppCompatActivity {
     }
 
     public void onClickParameter(View view) {
-        BluetoothGattCharacteristic display = Charactaristics.get(1);
-        Log.i("onClickSend", display.getUuid().toString());
-        Log.i("onClickSend", Integer.toString(getAssignedNumber(display.getUuid())));
-        mGatt.readCharacteristic(display);
-        display.setValue(4, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
-        mGatt.writeCharacteristic(display);
-        mGatt.readCharacteristic(display);
+        BluetoothGattCharacteristic characteristic = null;
+        for (BluetoothGattCharacteristic temp :confirmedCharacteristics){
+            if (getAssignedNumber(temp.getUuid()) == 0x2A38){
+                characteristic = temp;
+                break;
+            }
+        }
+        Log.i("onClickSend", characteristic.getUuid().toString());
+        Log.i("Write Type", Integer.toString(characteristic.getWriteType()));
+        Log.i("onClickSend", Integer.toHexString(getAssignedNumber(characteristic.getUuid())));
+        //mGatt.readCharacteristic(characteristic);
+        Float floatToWrite = (float)4.71;
+        int bits = Float.floatToIntBits(floatToWrite);
+
+        Log.i("Original", Integer.toHexString(bits));
+        byte[] bytes = new byte[4];
+        bytes[0] = (byte)(bits & 0xff);
+        bytes[1] = (byte)((bits >> 8) & 0xff);
+        bytes[2] = (byte)((bits >> 16) & 0xff);
+        bytes[3] = (byte)((bits >> 24) & 0xff);
+        int exponent = (bits & 0x7FC00000) >> 23;
+        int mantissa = (bits & 0x003FFFFF) >> 23;
+        //characteristic.setValue(mantissa, exponent, BluetoothGattCharacteristic.FORMAT_FLOAT, 0);
+        characteristic.setValue(bits, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
+        boolean write = mGatt.writeCharacteristic(characteristic);
+        String result = String.valueOf(write);
+        Log.i("DidItSend", result);
+        mGatt.readCharacteristic(characteristic);
     }
 
 
@@ -185,7 +204,7 @@ public class BLE_Test extends AppCompatActivity {
                     new ScanFilter.Builder()
                             .setDeviceName("Bluefruit52 HRM")
                             .build();
-            filters = new ArrayList<ScanFilter>();
+            filters = new ArrayList<>();
             filters.add(scanFilter);
             filters.add(scanFilter2);
             //scanLeDevice(true);
@@ -301,15 +320,25 @@ public class BLE_Test extends AppCompatActivity {
                     for (BluetoothGattCharacteristic characteristic : characteristics) {
                         if (ArrayUtils.contains(acceptable_characteristics, getAssignedNumber(characteristic.getUuid()))) {
                             Log.i("Characteristic found", characteristic.getUuid().toString());
-                            mGatt.readCharacteristic(characteristic);
-                            mGatt.setCharacteristicNotification(characteristic, true);
-                            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                            Charactaristics.add(characteristic);
+                            //mGatt.readCharacteristic(characteristic);
+
+                            //characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+                            confirmedCharacteristics.add(characteristic);
                             Descr= characteristic.getDescriptors();
+
                             for (BluetoothGattDescriptor d: Descr){
                                 Log.i("Descriptors", d.getUuid().toString());
-                                d.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                                mGatt.writeDescriptor(d);
+                                boolean set = d.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                                String result = String.valueOf(set);
+                                Log.i("DidItSet", result);
+                                boolean write = mGatt.writeDescriptor(d);
+                                String resultW = String.valueOf(write);
+                                Log.i("DidItWrite", resultW);
+
+                            }
+
+                            if (getAssignedNumber(characteristic.getUuid()) != 0x2A38){
+                                mGatt.setCharacteristicNotification(characteristic, true);
                             }
 
                         }
@@ -319,9 +348,7 @@ public class BLE_Test extends AppCompatActivity {
         }
 
         @Override
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic
-                                                 characteristic, int status) {
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             Log.i("onCharacteristicReadV", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString());
             Log.i("onCharacteristicReadP1", Integer.toString(characteristic.getPermissions()));
             Log.i("onCharacteristicReadP2", Integer.toString(characteristic.getProperties()));
@@ -330,19 +357,64 @@ public class BLE_Test extends AppCompatActivity {
         }
 
         @Override
-        public void onCharacteristicChanged (BluetoothGatt gatt,
-                                 BluetoothGattCharacteristic characteristic){
+        public void onCharacteristicChanged (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
             Log.i("onCharacteristicChanged", characteristic.toString());
-            Log.i("onCharacteristicChanged", characteristic.getIntValue(characteristic.FORMAT_UINT8, 0).toString());
-            Log.i("onCharacteristicChanged", characteristic.getIntValue(characteristic.FORMAT_UINT8, 1).toString());
+            Log.i("onCharacteristicChanged", characteristic.getUuid().toString());
+            Log.i("onCharacteristicChanged", Integer.toHexString(getAssignedNumber(characteristic.getUuid())));
+            Integer char_id = getAssignedNumber(characteristic.getUuid());
+            switch (char_id){
+                case (0x2A37):
+                    Log.i("Int", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString());
+                    Log.i("Int", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString());
+                    break;
+                case (0x2A39):
+                    Log.i("Float", characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 0).toString());
+                    Log.i("Float", characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 4).toString());
+
+                    byte[] bytes = characteristic.getValue();
+                    String value = toBinary(Arrays.copyOfRange(bytes, 0, 4));
+                    String value2 = toBinary(Arrays.copyOfRange(bytes, 4, 8));
+                    Log.i("Raw Val", value);
+                    Log.i("Raw Val", value2);
+
+                    Float myFloatValue = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 0, 4)).getFloat();
+                    Float myFloatValue2 = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 4, 8)).getFloat();
+                    Log.i("Byte to Float", myFloatValue.toString());
+                    Log.i("Byte to Float", myFloatValue2.toString());
+
+                    Log.i("Float Reversed", floatSwapEndianness32(characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 0)).toString());
+                    Log.i("Float Reversed", floatSwapEndianness32(characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 4)).toString());
+
+                    Log.i("Float Int", Integer.toHexString(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 0)));
+                    Log.i("Float Int", Integer.toHexString(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 4)));
+
+                    ByteBuffer so1 = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 0, 4)).order(ByteOrder.LITTLE_ENDIAN);
+                    ByteBuffer so2 = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 4, 8)).order(ByteOrder.LITTLE_ENDIAN);
+                    Float so1a = so1.getFloat();
+                    Float so2a = so2.getFloat();
+                    Log.i("Stack Overflow", so1a.toString());
+                    Log.i("Stack Overflow", so2a.toString());
+                    break;
+
+                default:
+                    break;
+
+            }
+
             Log.i("onCharacteristicChanged", Integer.toString(characteristic.getPermissions()));
             Log.i("onCharacteristicChanged", Integer.toString(characteristic.getProperties()));
         }
 
         @Override
-        public void onDescriptorRead(BluetoothGatt gatt,
-                                         BluetoothGattDescriptor
-                                                 descriptor, int status) {
+        public void onCharacteristicWrite (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            Log.i("Written", characteristic.toString());
+            Log.i("Written", characteristic.getUuid().toString());
+            Log.i("Written", Integer.toHexString(getAssignedNumber(characteristic.getUuid())));
+            Log.i("WrittenStatus", Integer.toString(status));
+        }
+
+        @Override
+        public void onDescriptorRead(BluetoothGatt gatt,BluetoothGattDescriptor descriptor, int status) {
             String value = new String(descriptor.getValue());
             String permission = new String(descriptor.getValue());
             Log.i("onDescriptorReadV", value);
@@ -351,9 +423,7 @@ public class BLE_Test extends AppCompatActivity {
         }
 
         @Override
-        public void onDescriptorWrite (BluetoothGatt gatt,
-                                        BluetoothGattDescriptor
-                                                descriptor, int status) {
+        public void onDescriptorWrite (BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             String value = new String(descriptor.getValue());
             String permission = new String(descriptor.getValue());
             Log.i("onDescriptorWriteV", value);
@@ -365,5 +435,32 @@ public class BLE_Test extends AppCompatActivity {
     private static int getAssignedNumber(UUID uuid) {
         // Keep only the significant bits of the UUID
         return (int) ((uuid.getMostSignificantBits() & 0x0000FFFF00000000L) >> 32);
+    }
+
+    private static Float floatSwapEndianness32(float test_float) {
+        // Keep only the significant bits of the UUID
+        int bits = Float.floatToIntBits(test_float);
+
+        Log.i("Original", Integer.toHexString(bits));
+        byte[] bytes = new byte[4];
+        bytes[0] = (byte)(bits & 0xff);
+        bytes[1] = (byte)((bits >> 8) & 0xff);
+        bytes[2] = (byte)((bits >> 16) & 0xff);
+        bytes[3] = (byte)((bits >> 24) & 0xff);
+
+        byte[] final_bytes = new byte[] { bytes[0], bytes[1], bytes[2], bytes[3]};
+
+        Log.i("New", Integer.toHexString(ByteBuffer.wrap(final_bytes).getInt()));
+
+        float myfloatvalue = ByteBuffer.wrap(final_bytes).getFloat();
+        return (myfloatvalue);
+    }
+
+    String toBinary( byte[] bytes )
+    {
+        StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
+        for( int i = 0; i < Byte.SIZE * bytes.length; i++ )
+            sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0' : '1');
+        return sb.toString();
     }
 }
