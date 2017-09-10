@@ -61,42 +61,6 @@
                 android:hint="@string/status" />
         </TableRow>
 
-
-        <TableRow
-            android:id="@+id/rawioRow"
-            style="?android:attr/buttonBarButtonStyle">
-
-            <TextView android:id="@+id/rawIn"
-                android:layout_weight="1"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:hint="@string/from_arduino" />
-
-            <EditText android:id="@+id/rawOut"
-                android:layout_weight="1"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:hint="@string/to_arduino" />
-
-            <Button android:id="@+id/buttonSend"
-                android:layout_weight="1"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:text="@string/send"
-                android:onClick="onClickSend"
-                android:gravity="center_vertical|center_horizontal"
-                style="?android:attr/buttonBarButtonStyle"/>
-
-            <TextView android:id="@+id/Status2"
-                android:layout_weight="1"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:hint="@string/status" />
-        </TableRow>
-
         <TableRow
             android:id="@+id/RefPressureRow"
             style="?android:attr/buttonBarButtonStyle">

@@ -22,9 +22,9 @@ import android.content.Intent;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.NumberPicker;
 import android.widget.Switch;
-import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Handler;
@@ -38,13 +38,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.lang.ArrayUtils;
 
-public class BLE_Test extends AppCompatActivity {
+public class kegActivity extends AppCompatActivity {
     boolean deviceConnected=false;
 
     //System Views
-    Button startButton,stopButton;
+    Button startButton;
     Switch switchButton;
-    TextView Status1;
+    NumberPicker Digit1, Digit2, Digit3, Digit4;
+    ImageView Num1, Num2, Num3, Num4, Fullness;
 
     private BluetoothAdapter mBluetoothAdapter;
     private Handler mHandler;
@@ -64,17 +65,39 @@ public class BLE_Test extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_ble__test);
+        setContentView(R.layout.activity_basic);
         mHandler = new Handler();
         //System Views
         startButton = (Button) findViewById(R.id.buttonStart);
-        stopButton = (Button) findViewById(R.id.buttonStop);
-        Status1 = (TextView) findViewById(R.id.Status1);
 
         switchButton = (Switch) findViewById(R.id.buttonSwitch);
         switchButton.setChecked(false);
-        Status1.setText(getApplicationContext().getString(R.string.not_connected));
+        Num1 = (ImageView) findViewById(R.id.Display1);
+        Num2 = (ImageView) findViewById(R.id.Display2);
+        Num3 = (ImageView) findViewById(R.id.Display3);
+        Num4 = (ImageView) findViewById(R.id.Display4);
+        Fullness = (ImageView) findViewById(R.id.Fullness);
 
+        Digit1 = (NumberPicker) findViewById(R.id.Digit1);
+        Digit2 = (NumberPicker) findViewById(R.id.Digit2);
+        Digit3 = (NumberPicker) findViewById(R.id.Digit3);
+        Digit4 = (NumberPicker) findViewById(R.id.Digit4);
+
+        Digit1.setMinValue(1);
+        Digit1.setMaxValue(1);
+        Digit1.setWrapSelectorWheel(false);
+
+        Digit2.setMinValue(4);
+        Digit2.setMaxValue(9);
+        Digit2.setWrapSelectorWheel(false);
+
+        Digit3.setMinValue(0);
+        Digit3.setMaxValue(10);
+        Digit3.setWrapSelectorWheel(false);
+
+        Digit4.setMinValue(0);
+        Digit4.setMaxValue(10);
+        Digit4.setWrapSelectorWheel(false);
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "Bluetooth Low Energy Not Supported",
                     Toast.LENGTH_SHORT).show();
@@ -90,51 +113,37 @@ public class BLE_Test extends AppCompatActivity {
 
     }
 
-    public void onClickParameter(View view) {
-        int rowId = ((View) view.getParent()).getId();
-        TableRow row = (TableRow)findViewById(rowId);
-        EditText grabFrom = (EditText)row.getChildAt(2);
-        String valueString = grabFrom.getText().toString();
-        TextView reference = (TextView)row.getChildAt(1);
+    public void onClickSend(View view) {
+        String Digit_1 = Integer.toHexString(Digit1.getValue());
+        String Digit_2 = Integer.toHexString(Digit2.getValue());
+        String Digit_3 = Integer.toHexString(Digit3.getValue());
+        String Digit_4 = Integer.toHexString(Digit4.getValue());
+
+        String total_string = Digit_1 + Digit_2 + "." + Digit_3 + Digit_4;
+
+        Float valueToSend = Float.parseFloat(total_string);
+
         BluetoothGattCharacteristic toWriteTo = null;
-        Integer shorthand = null;
-        for (BLE_Characteristic temp : allBLE){
-            if (temp.BLE_View == reference){
+
+        for (BLE_Characteristic temp : allBLE) {
+            if (temp.BLE_Short == 0xF001) {
                 toWriteTo = temp.BLE_Full;
-                shorthand = temp.BLE_Short;
                 break;
             }
         }
-        if (toWriteTo != null){
-            if (shorthand >= 0xF000) {
-                Float floatToWrite = Float.parseFloat(valueString);
-                int bits = Float.floatToIntBits(floatToWrite);
-                //characteristic.setValue(mantissa, exponent, BluetoothGattCharacteristic.FORMAT_FLOAT, 0);
-                toWriteTo.setValue(bits, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
-            }
-            else if ((shorthand < 0xF000) & (shorthand >= 0xE000)) {
-                Integer intToWrite = Integer.parseInt(valueString);
-                toWriteTo.setValue(intToWrite, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
-            }
-            else if ((shorthand < 0xE000) & (shorthand >= 0xD000)) {
-                Integer intToWrite = Integer.parseInt(valueString);
-                toWriteTo.setValue(intToWrite, BluetoothGattCharacteristic.FORMAT_UINT16, 0);
-            }
-            else if ((shorthand < 0xD000) & (shorthand >= 0xC000)) {
-                Integer intToWrite = Integer.parseInt(valueString);
-                toWriteTo.setValue(intToWrite, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
-            }
-            else {
-                Log.i("OnClickSend", "Unknown Characteristic");
-            }
-            Log.i("OnClickSend", "Sending " + valueString);
-            Log.i("OnClickSend", "To " + Integer.toHexString(shorthand));
+
+        if (toWriteTo != null) {
+            int bits = Float.floatToIntBits(valueToSend);
+            //characteristic.setValue(mantissa, exponent, BluetoothGattCharacteristic.FORMAT_FLOAT, 0);
+            toWriteTo.setValue(bits, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
+
+            Log.i("OnClickSend", "Sending " + total_string);
             BLEservicesRunning = true;
             boolean write = mGatt.writeCharacteristic(toWriteTo);
             String result = String.valueOf(write);
             Log.i("DidItSend", result);
-            while (BLEservicesRunning){
-                try{
+            while (BLEservicesRunning) {
+                try {
                     Log.i("Write Thread", "BLE Services being used, will wait");
                     synchronized (serviceLock) {
                         serviceLock.wait();
@@ -145,8 +154,8 @@ public class BLE_Test extends AppCompatActivity {
             }
             mGatt.readCharacteristic(toWriteTo);
         }
-        else{
-            Log.i("onClickSend", "No view found!");
+        else {
+            Log.i("onClickSend", "No char found!");
         }
     }
 
@@ -179,7 +188,7 @@ public class BLE_Test extends AppCompatActivity {
             mGatt.close();
         }
         mGatt = null;
-        Intent intent = new Intent(this, kegActivity.class);
+        Intent intent = new Intent(this, BLE_Test.class);
         startActivity(intent);
         finish();
 
@@ -264,8 +273,8 @@ public class BLE_Test extends AppCompatActivity {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             List<BluetoothGattService> services = gatt.getServices();
             int[] acceptable_services = getResources().getIntArray(R.array.Services);
-            int[] notification_characteristics = getResources().getIntArray(R.array.notificationCharacteristics);
-            int[] write_characteristics = getResources().getIntArray(R.array.writeCharacteristics);
+            int[] notification_characteristics = getResources().getIntArray(R.array.basicNotification);
+            int[] write_characteristics = getResources().getIntArray(R.array.basicWrite);
             for (BluetoothGattService service : services) {
                 if (ArrayUtils.contains(acceptable_services, BLE_Characteristic.getAssignedNumber(service.getUuid()))) {
                     Log.i("Service found", service.getUuid().toString());
@@ -274,10 +283,9 @@ public class BLE_Test extends AppCompatActivity {
                     List<BluetoothGattDescriptor> Descr;
                     for (BluetoothGattCharacteristic characteristic : characteristics) {
                         Integer shorthandChar = BLE_Characteristic.getAssignedNumber(characteristic.getUuid());
-
-                        TextView corresponding_view = BLE_Characteristic.getIdFromShortChar(BLE_Test.this, shorthandChar);
-                        allBLE.add(new BLE_Characteristic(shorthandChar, characteristic, corresponding_view));
                         if (ArrayUtils.contains(notification_characteristics, shorthandChar)) {
+                            TextView corresponding_view = BLE_Characteristic.getIdFromShortChar(kegActivity.this, shorthandChar);
+                            allBLE.add(new BLE_Characteristic(shorthandChar, characteristic, corresponding_view));
                             Log.i("Characteristic found", characteristic.getUuid().toString());
                             //mGatt.readCharacteristic(characteristic);
 
@@ -305,6 +313,8 @@ public class BLE_Test extends AppCompatActivity {
                             mGatt.setCharacteristicNotification(characteristic, true);
 
                         } else if (ArrayUtils.contains(write_characteristics, shorthandChar)) {
+                            TextView corresponding_view = BLE_Characteristic.getIdFromShortChar(kegActivity.this, shorthandChar);
+                            allBLE.add(new BLE_Characteristic(shorthandChar, characteristic, corresponding_view));
                             Log.i("Read Characteristic:", characteristic.getUuid().toString());
                         }
                     }
@@ -380,13 +390,6 @@ public class BLE_Test extends AppCompatActivity {
     };
 
     private void updateCharacteristic(BluetoothGattCharacteristic characteristic){
-        TextView viewToUpdate = null;
-        for (BLE_Characteristic test_collection : allBLE) {
-            if (test_collection.BLE_Full == characteristic) {
-                viewToUpdate = test_collection.BLE_View;
-                break;
-            }
-        }
         Integer char_id = BLE_Characteristic.getAssignedNumber(characteristic.getUuid());
         String updateString = null;
         if (char_id >= 0xF000) {
@@ -412,8 +415,8 @@ public class BLE_Test extends AppCompatActivity {
             Log.i("Unknown characteristic", Integer.toHexString(char_id));
         }
         if (updateString != null) {
-            Runnable t = new updateViews(viewToUpdate, updateString);
-            BLE_Test.this.runOnUiThread(t);
+            Runnable t = new updateViews(char_id, updateString);
+            kegActivity.this.runOnUiThread(t);
         }
     }
 
@@ -464,15 +467,72 @@ public class BLE_Test extends AppCompatActivity {
     }
 
     private class updateViews implements Runnable {
-        TextView viewToChange;
+        Integer charID;
         String stringToSet;
-        private updateViews(TextView viewToChange, String stringToSet) {
-            this.viewToChange = viewToChange;
+        private updateViews(Integer char_ID, String stringToSet) {
+            this.charID = char_ID;
             this.stringToSet = stringToSet;
         }
 
         public void run() {
-            viewToChange.setText(stringToSet);
+            if (charID == 0xF000){
+                Log.i("Pressure is", stringToSet);
+                Character Char1 = stringToSet.charAt(0);
+                Log.i("Char1 is", Character.toString(Char1));
+                int Digit_1 = Character.getNumericValue(Char1);
+                final Integer ImageNum = doImages(Digit_1);
+                Num1.setImageResource(ImageNum);
+
+                Character Char2 = stringToSet.charAt(1);
+                Log.i("Char2 is", Character.toString(Char2));
+                int Digit_2 = Character.getNumericValue(Char2);
+                final Integer ImageNum2 = doImages(Digit_2);
+                Num2.setImageResource(ImageNum2);
+
+                Character Char3 = stringToSet.charAt(3);
+                Log.i("Char3 is", Character.toString(Char3));
+                int Digit_3 = Character.getNumericValue(Char3);
+                final Integer ImageNum3 = doImages(Digit_3);
+                Num3.setImageResource(ImageNum3);
+
+                Character Char4 = stringToSet.charAt(4);
+                Log.i("Char4 is", Character.toString(Char4));
+                int Digit_4 = Character.getNumericValue(Char4);
+                final Integer ImageNum4 = doImages(Digit_4);
+                Num4.setImageResource(ImageNum4);
+            }
+            else if (charID == 0xE001){
+                Log.i("Fullness is", stringToSet);
+                final Integer ImageNum = doFullness(Integer.parseInt(stringToSet));
+                Fullness.setImageResource(ImageNum);
+            }
+            else if (charID == 0xF001){
+                Log.i("Ref Pressure is", stringToSet);
+                Character Char1 = stringToSet.charAt(0);
+                Log.i("Char1 is", Character.toString(Char1));
+                int Digit_1 = Character.getNumericValue(Char1);
+                Digit1.setValue(Digit_1);
+
+                Character Char2 = stringToSet.charAt(1);
+                Log.i("Char2 is", Character.toString(Char2));
+                int Digit_2 = Character.getNumericValue(Char2);
+                Digit2.setValue(Digit_2);
+
+                Character Char3 = stringToSet.charAt(3);
+                Log.i("Char3 is", Character.toString(Char3));
+                int Digit_3 = Character.getNumericValue(Char3);
+                Digit3.setValue(Digit_3);
+
+                try {
+                    Character Char4 = stringToSet.charAt(4);
+                    Log.i("Char4 is", Character.toString(Char4));
+                    int Digit_4 = Character.getNumericValue(Char4);
+                    Digit4.setValue(Digit_4);
+                }
+                catch (StringIndexOutOfBoundsException e){
+                    Digit4.setValue(0);
+                }
+            }
         }
     }
 
@@ -493,7 +553,7 @@ public class BLE_Test extends AppCompatActivity {
                     Log.i("Initial Write Thread: ", iex.getMessage());
                 }
             Log.i("Initial Write Thread", "Queue must be empty");
-            int[] write_characteristics = getResources().getIntArray(R.array.writeCharacteristics);
+            int[] write_characteristics = getResources().getIntArray(R.array.basicWrite);
             for (int temp_char:write_characteristics){
                 for (BLE_Characteristic temp_collection:allBLE){
                     if(temp_char == temp_collection.BLE_Short){
@@ -519,6 +579,87 @@ public class BLE_Test extends AppCompatActivity {
             Log.i("Initial Write Thread", "Thread Done");
 
         }
+    }
+
+    public Integer doImages (int num){
+        Integer theID = null;
+        switch (num) {
+            case 0:
+                theID = getResources().getIdentifier("zero", "drawable", getPackageName());
+                break;
+
+            case 1:
+                theID = getResources().getIdentifier("one", "drawable", getPackageName());
+                break;
+
+            case 2:
+                theID = getResources().getIdentifier("two", "drawable", getPackageName());
+                break;
+
+            case 3:
+                theID = getResources().getIdentifier("three", "drawable", getPackageName());
+                break;
+
+            case 4:
+                theID = getResources().getIdentifier("four", "drawable", getPackageName());
+                break;
+
+            case 5:
+                theID = getResources().getIdentifier("five", "drawable", getPackageName());
+                break;
+
+            case 6:
+                theID = getResources().getIdentifier("six", "drawable", getPackageName());
+                break;
+
+            case 7:
+                theID = getResources().getIdentifier("seven", "drawable", getPackageName());
+                break;
+
+            case 8:
+                theID = getResources().getIdentifier("eight", "drawable", getPackageName());
+                break;
+
+            case 9:
+                theID = getResources().getIdentifier("nine", "drawable", getPackageName());
+                break;
+
+            default:
+                break;
+        }
+        return theID;
+
+    }
+
+    public Integer doFullness (Integer num){
+        Integer theID;
+        switch (num) {
+            case 100:
+                theID = getResources().getIdentifier("full", "drawable", getPackageName());
+                break;
+
+            case 75:
+                theID = getResources().getIdentifier("a34", "drawable", getPackageName());
+                break;
+
+            case 50:
+                theID = getResources().getIdentifier("a12", "drawable", getPackageName());
+                break;
+
+            case 25:
+                theID = getResources().getIdentifier("a14", "drawable", getPackageName());
+                break;
+
+            case 0:
+                theID = getResources().getIdentifier("empty", "drawable", getPackageName());
+                break;
+
+            default:
+                theID = getResources().getIdentifier("full", "drawable", getPackageName());
+                break;
+        }
+        return theID;
+
     }
 
 }

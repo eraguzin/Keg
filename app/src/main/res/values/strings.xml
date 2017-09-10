@@ -5,6 +5,9 @@
     <string name="stop">Stop</string>
     <string name="status">Y for basic</string>
 
+    <string name="search_name">Keg Pump!</string>
+
+    <string name="not_connected">Not Connected</string>
     <string name="connected">Connected</string>
 
     <string name="basic">Basic</string>
@@ -86,6 +89,15 @@
         <item>0xE001</item>
         <item>0xE004</item>
         <item>0xD005</item>
+    </integer-array>
+
+    <integer-array name="basicNotification">
+        <item>0xF000</item>
+        <item>0xE001</item>
+    </integer-array>
+
+    <integer-array name="basicWrite">
+        <item>0xF001</item>
     </integer-array>
 
 </resources>

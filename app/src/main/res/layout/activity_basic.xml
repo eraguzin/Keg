@@ -86,20 +86,6 @@
         </TableRow>
 
         <TableRow
-            android:id="@+id/BrightnessRow"
-            style="?android:attr/buttonBarButtonStyle">
-
-            <SeekBar
-                android:id="@+id/BrightnessSeeker"
-                android:layout_weight="1"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:text="@string/brightness"
-                android:max="100"
-                android:progress="50"/>
-        </TableRow>
-
-        <TableRow
             android:id="@+id/PressureSelect"
             style="?android:attr/buttonBarButtonStyle">
 
