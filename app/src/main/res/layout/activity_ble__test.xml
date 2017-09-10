@@ -398,41 +398,24 @@
         </TableRow>
 
         <TableRow
-            android:id="@+id/BrightnessRow"
+            android:id="@+id/VersionRow"
             style="?android:attr/buttonBarButtonStyle">
 
             <TextView
-                android:id="@+id/labelBrightness"
+                android:id="@+id/labelVersion"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
-                android:text="@string/brightness" />
+                android:text="@string/version" />
 
             <TextView
-                android:id="@+id/receiveBrightness"
+                android:id="@+id/receiveVersion"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:hint="@string/from_arduino" />
-
-            <EditText android:id="@+id/fieldBrightness"
-                android:layout_weight="1"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:inputType="number"
-                android:tag="g"
-                android:hint="@string/to_arduino" />
-
-            <Button android:id="@+id/buttonBrightness"
-                android:layout_weight="1"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:text="@string/send"
-                android:onClick="onClickParameter"
-                style="?android:attr/buttonBarButtonStyle"/>
         </TableRow>
 
         <TableRow
@@ -474,11 +457,11 @@
         </TableRow>
 
         <TableRow
-            android:id="@+id/SetRow"
+            android:id="@+id/SettleRow"
             style="?android:attr/buttonBarButtonStyle">
 
             <TextView
-                android:id="@+id/labelSet"
+                android:id="@+id/labelSettle"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
@@ -486,14 +469,14 @@
                 android:text="@string/set_time" />
 
             <TextView
-                android:id="@+id/receiveSet"
+                android:id="@+id/receiveSettle"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:hint="@string/from_arduino" />
 
-            <EditText android:id="@+id/fieldSet"
+            <EditText android:id="@+id/fieldSettle"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
@@ -502,7 +485,7 @@
                 android:tag="m"
                 android:hint="@string/to_arduino" />
 
-            <Button android:id="@+id/buttonSet"
+            <Button android:id="@+id/buttonSettle"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
@@ -512,35 +495,35 @@
         </TableRow>
 
         <TableRow
-            android:id="@+id/DispRow"
+            android:id="@+id/DebugRow"
             style="?android:attr/buttonBarButtonStyle">
 
             <TextView
-                android:id="@+id/labelDisp"
+                android:id="@+id/labelDebug"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
-                android:text="@string/disp_update" />
+                android:text="@string/debug_view" />
 
             <TextView
-                android:id="@+id/receiveDisp"
+                android:id="@+id/receiveDebug"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:hint="@string/from_arduino" />
 
-            <EditText android:id="@+id/fieldDisp"
+            <EditText android:id="@+id/fieldDebug"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:inputType="number"
-                android:tag="s"
+                android:tag="m"
                 android:hint="@string/to_arduino" />
 
-            <Button android:id="@+id/buttonDisp"
+            <Button android:id="@+id/buttonDebug"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"

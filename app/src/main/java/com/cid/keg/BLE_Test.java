@@ -1,5 +1,6 @@
 package com.cid.keg;
 
+import com.cid.keg.BLE_Characteristic;
 import android.app.ListActivity;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -31,6 +32,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Switch;
+import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,12 +44,17 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.apache.commons.lang.ArrayUtils;
+import org.w3c.dom.Text;
 
 public class BLE_Test extends AppCompatActivity {
 
@@ -61,16 +68,14 @@ public class BLE_Test extends AppCompatActivity {
 
     boolean deviceConnected=false;
 
-
-
     //System Views
     Button startButton,stopButton,sendButton;
     TextView Status1,rawIn,Status2;
     EditText rawOut;
 
     TextView pressureRefReceive,pressureReceive,errorReceive,kPReceive,kIReceive,kDReceive,
-            PReceive,IReceive,DReceive,IntegralReceive,PumpReceive,BrightnessReceive,UpdateReceive,
-            SetReceive,DispReceive,BattReceive,dPReceive,dTReceive,ModeReceive,Start_pReceive,
+            PReceive,IReceive,DReceive,IntegralReceive,PumpReceive,VersionReceive,UpdateReceive,
+            SettleReceive,DebugReceive,BattReceive,dPReceive,dTReceive,ModeReceive,Start_pReceive,
             BlowReceive,TTReceive,TestWaitReceive,FullnessReceive;
 
     Switch switchButton;
@@ -86,6 +91,13 @@ public class BLE_Test extends AppCompatActivity {
 
     private List<BluetoothGattCharacteristic> confirmedCharacteristics = new ArrayList<>();
     private List<BluetoothGattDescriptor> Descr = new ArrayList<>();
+    private Queue<BluetoothGattDescriptor> descriptorSetQueue = new ConcurrentLinkedQueue();
+    private Object serviceLock = new Object();
+    private Object initWriteLock = new Object();
+    boolean BLEservicesRunning = false;
+    setDescriptorThread q = new setDescriptorThread();
+    initialReadThread init = new initialReadThread();
+    List<BLE_Characteristic> allBLE = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,40 +114,19 @@ public class BLE_Test extends AppCompatActivity {
         Status2 = (TextView) findViewById(R.id.Status2);
         rawOut = (EditText) findViewById(R.id.rawOut);
 
-        pressureRefReceive = (TextView) findViewById(R.id.receiveRefPressure);
-        pressureReceive = (TextView) findViewById(R.id.receivePressure);
-        errorReceive = (TextView) findViewById(R.id.receiveError);
-        kPReceive = (TextView) findViewById(R.id.receivekP);
-        kIReceive = (TextView) findViewById(R.id.receivekI);
-        kDReceive = (TextView) findViewById(R.id.receivekD);
-        PReceive = (TextView) findViewById(R.id.receiveP);
-        IReceive = (TextView) findViewById(R.id.receiveI);
-        DReceive = (TextView) findViewById(R.id.receiveD);
-        IntegralReceive = (TextView) findViewById(R.id.receiveIntegral);
-        PumpReceive = (TextView) findViewById(R.id.receivePump);
-        BrightnessReceive = (TextView) findViewById(R.id.receiveBrightness);
-        UpdateReceive = (TextView) findViewById(R.id.receiveUpdate);
-        SetReceive = (TextView) findViewById(R.id.receiveSet);
-        DispReceive = (TextView) findViewById(R.id.receiveDisp);
-        BattReceive = (TextView) findViewById(R.id.receivebatt);
-        dPReceive = (TextView) findViewById(R.id.receivedP);
-        dTReceive = (TextView) findViewById(R.id.receivedT);
-        ModeReceive = (TextView) findViewById(R.id.receivemode);
-        Start_pReceive = (TextView) findViewById(R.id.receivestart_p);
-        BlowReceive = (TextView) findViewById(R.id.receiveBlow);
-        TTReceive = (TextView) findViewById(R.id.receiveTT);
-        TestWaitReceive = (TextView) findViewById(R.id.receiveTestWait);
-        FullnessReceive = (TextView) findViewById(R.id.receiveFullness);
-
         switchButton = (Switch) findViewById(R.id.buttonSwitch);
         switchButton.setChecked(false);
         Status2.setText("BLE test yo");
 
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "BLE Not Supported",
+            Toast.makeText(this, "Bluetooth Low Energy Not Supported",
                     Toast.LENGTH_SHORT).show();
             finish();
         }
+
+
+        new Thread(q).start();
+
         final BluetoothManager bluetoothManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
@@ -145,7 +136,7 @@ public class BLE_Test extends AppCompatActivity {
     public void onClickSend(View view) {
         BluetoothGattCharacteristic display = confirmedCharacteristics.get(0);
         Log.i("onClickSend", display.getUuid().toString());
-        Log.i("onClickSend", Integer.toString(getAssignedNumber(display.getUuid())));
+        Log.i("onClickSend", Integer.toString(BLE_Characteristic.getAssignedNumber(display.getUuid())));
         mGatt.readCharacteristic(display);
         display.setValue(4, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
         mGatt.writeCharacteristic(display);
@@ -153,37 +144,64 @@ public class BLE_Test extends AppCompatActivity {
     }
 
     public void onClickParameter(View view) {
-        BluetoothGattCharacteristic characteristic = null;
-        for (BluetoothGattCharacteristic temp :confirmedCharacteristics){
-            if (getAssignedNumber(temp.getUuid()) == 0x2A38){
-                characteristic = temp;
+        int rowId = ((View) view.getParent()).getId();
+        TableRow row = (TableRow)findViewById(rowId);
+        EditText grabFrom = (EditText)row.getChildAt(2);
+        String valueString = grabFrom.getText().toString();
+        TextView reference = (TextView)row.getChildAt(1);
+        BluetoothGattCharacteristic toWriteTo = null;
+        Integer shorthand = null;
+        for (BLE_Characteristic temp : allBLE){
+            if (temp.BLE_View == reference){
+                toWriteTo = temp.BLE_Full;
+                shorthand = temp.BLE_Short;
                 break;
             }
         }
-        Log.i("onClickSend", characteristic.getUuid().toString());
-        Log.i("Write Type", Integer.toString(characteristic.getWriteType()));
-        Log.i("onClickSend", Integer.toHexString(getAssignedNumber(characteristic.getUuid())));
-        //mGatt.readCharacteristic(characteristic);
-        Float floatToWrite = (float)4.71;
-        int bits = Float.floatToIntBits(floatToWrite);
-
-        Log.i("Original", Integer.toHexString(bits));
-        byte[] bytes = new byte[4];
-        bytes[0] = (byte)(bits & 0xff);
-        bytes[1] = (byte)((bits >> 8) & 0xff);
-        bytes[2] = (byte)((bits >> 16) & 0xff);
-        bytes[3] = (byte)((bits >> 24) & 0xff);
-        int exponent = (bits & 0x7FC00000) >> 23;
-        int mantissa = (bits & 0x003FFFFF) >> 23;
-        //characteristic.setValue(mantissa, exponent, BluetoothGattCharacteristic.FORMAT_FLOAT, 0);
-        characteristic.setValue(bits, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
-        boolean write = mGatt.writeCharacteristic(characteristic);
-        String result = String.valueOf(write);
-        Log.i("DidItSend", result);
-        mGatt.readCharacteristic(characteristic);
+        if (toWriteTo != null){
+            if (shorthand >= 0xF000) {
+                Float floatToWrite = Float.parseFloat(valueString);
+                int bits = Float.floatToIntBits(floatToWrite);
+                //characteristic.setValue(mantissa, exponent, BluetoothGattCharacteristic.FORMAT_FLOAT, 0);
+                toWriteTo.setValue(bits, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
+            }
+            else if ((shorthand < 0xF000) & (shorthand >= 0xE000)) {
+                Integer intToWrite = Integer.parseInt(valueString);
+                toWriteTo.setValue(intToWrite, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+            }
+            else if ((shorthand < 0xE000) & (shorthand >= 0xD000)) {
+                Integer intToWrite = Integer.parseInt(valueString);
+                toWriteTo.setValue(intToWrite, BluetoothGattCharacteristic.FORMAT_UINT16, 0);
+            }
+            else if ((shorthand < 0xD000) & (shorthand >= 0xC000)) {
+                Integer intToWrite = Integer.parseInt(valueString);
+                toWriteTo.setValue(intToWrite, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
+            }
+            else {
+                Log.i("OnClickSend", "Unknown Characteristic");
+            }
+            Log.i("OnClickSend", "Sending " + valueString);
+            Log.i("OnClickSend", "To " + Integer.toHexString(shorthand));
+            BLEservicesRunning = true;
+            boolean write = mGatt.writeCharacteristic(toWriteTo);
+            String result = String.valueOf(write);
+            Log.i("DidItSend", result);
+            while (BLEservicesRunning == true){
+                try{
+                    Log.i("Write Thread", "BLE Services being used, will wait");
+                    synchronized (serviceLock) {
+                        serviceLock.wait();
+                    }
+                } catch (InterruptedException iex) {
+                    Log.i("Write Thread: ", iex.getMessage());
+                }
+            }
+            mGatt.readCharacteristic(toWriteTo);
+        }
+        else{
+            Log.i("onClickSend", "No view found!");
+        }
     }
-
-
 
     @Override
     protected void onResume() {
@@ -198,7 +216,7 @@ public class BLE_Test extends AppCompatActivity {
                     .build();
             ScanFilter scanFilter =
                     new ScanFilter.Builder()
-                            .setDeviceName("Keg")
+                            .setDeviceName("Keg Pump!")
                             .build();
             ScanFilter scanFilter2 =
                     new ScanFilter.Builder()
@@ -266,6 +284,7 @@ public class BLE_Test extends AppCompatActivity {
             Log.i("callbackType", String.valueOf(callbackType));
             Log.i("result", result.toString());
             BluetoothDevice btDevice = result.getDevice();
+            Log.i("Address", btDevice.getAddress());
             connectToDevice(btDevice);
         }
 
@@ -297,10 +316,12 @@ public class BLE_Test extends AppCompatActivity {
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
                     Log.i("gattCallback", "STATE_CONNECTED");
+                    android.os.SystemClock.sleep(600);
                     gatt.discoverServices();
                     break;
                 case BluetoothProfile.STATE_DISCONNECTED:
                     Log.e("gattCallback", "STATE_DISCONNECTED");
+                    mGatt.close();
                     break;
                 default:
                     Log.e("gattCallback", "STATE_OTHER");
@@ -312,37 +333,51 @@ public class BLE_Test extends AppCompatActivity {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             List<BluetoothGattService> services = gatt.getServices();
             int[] acceptable_services = getResources().getIntArray(R.array.Services);
-            int[] acceptable_characteristics = getResources().getIntArray(R.array.Characteristics);
+            int[] notification_characteristics = getResources().getIntArray(R.array.notificationCharacteristics);
+            int[] write_characteristics = getResources().getIntArray(R.array.writeCharacteristics);
             for (BluetoothGattService service : services) {
-                if (ArrayUtils.contains(acceptable_services, getAssignedNumber(service.getUuid()))) {
+                if (ArrayUtils.contains(acceptable_services, BLE_Characteristic.getAssignedNumber(service.getUuid()))) {
                     Log.i("Service found", service.getUuid().toString());
+                    allBLE.clear();
                     List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
                     for (BluetoothGattCharacteristic characteristic : characteristics) {
-                        if (ArrayUtils.contains(acceptable_characteristics, getAssignedNumber(characteristic.getUuid()))) {
+                        Integer shorthandChar = BLE_Characteristic.getAssignedNumber(characteristic.getUuid());
+
+                        TextView corresponding_view = BLE_Characteristic.getIdFromShortChar(BLE_Test.this, shorthandChar);
+                        allBLE.add(new BLE_Characteristic(shorthandChar, characteristic, corresponding_view));
+                        if (ArrayUtils.contains(notification_characteristics, shorthandChar)) {
                             Log.i("Characteristic found", characteristic.getUuid().toString());
                             //mGatt.readCharacteristic(characteristic);
 
                             //characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                             confirmedCharacteristics.add(characteristic);
-                            Descr= characteristic.getDescriptors();
+                            Descr = characteristic.getDescriptors();
 
-                            for (BluetoothGattDescriptor d: Descr){
-                                Log.i("Descriptors", d.getUuid().toString());
+                            for (BluetoothGattDescriptor d : Descr) {
+                                //Log.i("Descriptors", d.getUuid().toString());
                                 boolean set = d.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                                 String result = String.valueOf(set);
                                 Log.i("DidItSet", result);
-                                boolean write = mGatt.writeDescriptor(d);
-                                String resultW = String.valueOf(write);
-                                Log.i("DidItWrite", resultW);
+                                if (descriptorSetQueue.isEmpty()) {
+                                    descriptorSetQueue.add(d);
+                                    synchronized (q) {
+                                        q.notify();
+                                    }
+                                } else {
+                                    descriptorSetQueue.add(d);
+                                }
+                                //Log.i("Queue size after add", Integer.toString(descriptorSetQueue.size()));
+                                //Log.i("Queue after add", descriptorSetQueue.toString());
 
                             }
 
-                            if (getAssignedNumber(characteristic.getUuid()) != 0x2A38){
-                                mGatt.setCharacteristicNotification(characteristic, true);
-                            }
+                            mGatt.setCharacteristicNotification(characteristic, true);
 
+                        } else if (ArrayUtils.contains(write_characteristics, shorthandChar)) {
+                            Log.i("Read Characteristic:", characteristic.getUuid().toString());
                         }
                     }
+                    new Thread(init).start();
                 }
             }
         }
@@ -350,117 +385,210 @@ public class BLE_Test extends AppCompatActivity {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             Log.i("onCharacteristicReadV", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString());
-            Log.i("onCharacteristicReadP1", Integer.toString(characteristic.getPermissions()));
-            Log.i("onCharacteristicReadP2", Integer.toString(characteristic.getProperties()));
+            //Log.i("onCharacteristicReadP1", Integer.toString(characteristic.getPermissions()));
+            //Log.i("onCharacteristicReadP2", Integer.toString(characteristic.getProperties()));
             Log.i("onCharacteristicReadS", Integer.toString(status));
             //gatt.disconnect();
+            updateCharacteristic((characteristic));
+            BLEservicesRunning = false;
+            synchronized (serviceLock) {
+                serviceLock.notify();
+            }
         }
 
         @Override
         public void onCharacteristicChanged (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
-            Log.i("onCharacteristicChanged", characteristic.toString());
-            Log.i("onCharacteristicChanged", characteristic.getUuid().toString());
-            Log.i("onCharacteristicChanged", Integer.toHexString(getAssignedNumber(characteristic.getUuid())));
-            Integer char_id = getAssignedNumber(characteristic.getUuid());
-            switch (char_id){
-                case (0x2A37):
-                    Log.i("Int", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString());
-                    Log.i("Int", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString());
-                    break;
-                case (0x2A39):
-                    Log.i("Float", characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 0).toString());
-                    Log.i("Float", characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 4).toString());
+            //Log.i("onCharacteristicChanged", characteristic.toString());
+            //Log.i("onCharacteristicChanged", characteristic.getUuid().toString());
+            //Log.i("onCharacteristicChanged", Integer.toHexString(BLE_Characteristic.getAssignedNumber(characteristic.getUuid())));
 
-                    byte[] bytes = characteristic.getValue();
-                    String value = toBinary(Arrays.copyOfRange(bytes, 0, 4));
-                    String value2 = toBinary(Arrays.copyOfRange(bytes, 4, 8));
-                    Log.i("Raw Val", value);
-                    Log.i("Raw Val", value2);
-
-                    Float myFloatValue = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 0, 4)).getFloat();
-                    Float myFloatValue2 = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 4, 8)).getFloat();
-                    Log.i("Byte to Float", myFloatValue.toString());
-                    Log.i("Byte to Float", myFloatValue2.toString());
-
-                    Log.i("Float Reversed", floatSwapEndianness32(characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 0)).toString());
-                    Log.i("Float Reversed", floatSwapEndianness32(characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 4)).toString());
-
-                    Log.i("Float Int", Integer.toHexString(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 0)));
-                    Log.i("Float Int", Integer.toHexString(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 4)));
-
-                    ByteBuffer so1 = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 0, 4)).order(ByteOrder.LITTLE_ENDIAN);
-                    ByteBuffer so2 = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 4, 8)).order(ByteOrder.LITTLE_ENDIAN);
-                    Float so1a = so1.getFloat();
-                    Float so2a = so2.getFloat();
-                    Log.i("Stack Overflow", so1a.toString());
-                    Log.i("Stack Overflow", so2a.toString());
-                    break;
-
-                default:
-                    break;
-
+            if(descriptorSetQueue.isEmpty()) {
+                updateCharacteristic(characteristic);
             }
 
-            Log.i("onCharacteristicChanged", Integer.toString(characteristic.getPermissions()));
-            Log.i("onCharacteristicChanged", Integer.toString(characteristic.getProperties()));
+            else {
+                Log.i("Characteristic changed", "Waiting for all descriptors to be set");
+            }
+
         }
 
         @Override
         public void onCharacteristicWrite (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            Log.i("Written", characteristic.toString());
-            Log.i("Written", characteristic.getUuid().toString());
-            Log.i("Written", Integer.toHexString(getAssignedNumber(characteristic.getUuid())));
+            //Log.i("Written", characteristic.toString());
+            //Log.i("Written", characteristic.getUuid().toString());
+            Log.i("Written", Integer.toHexString(BLE_Characteristic.getAssignedNumber(characteristic.getUuid())));
             Log.i("WrittenStatus", Integer.toString(status));
+
+            BLEservicesRunning = false;
+            synchronized (serviceLock) {
+                serviceLock.notify();
+            }
         }
 
         @Override
         public void onDescriptorRead(BluetoothGatt gatt,BluetoothGattDescriptor descriptor, int status) {
             String value = new String(descriptor.getValue());
             String permission = new String(descriptor.getValue());
-            Log.i("onDescriptorReadV", value);
-            Log.i("onDescriptorReadP1", permission);
-            Log.i("onDescriptorReadS", Integer.toString(status));
+            //Log.i("onDescriptorReadV", value);
+            //Log.i("onDescriptorReadP1", permission);
+            //Log.i("onDescriptorReadS", Integer.toString(status));
         }
 
         @Override
         public void onDescriptorWrite (BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            String value = new String(descriptor.getValue());
-            String permission = new String(descriptor.getValue());
-            Log.i("onDescriptorWriteV", value);
-            Log.i("onDescriptorWriteP1", permission);
-            Log.i("onDescriptorWriteS", Integer.toString(status));
+            //String value = new String(descriptor.getValue());
+            //String permission = new String(descriptor.getValue());
+            //Log.i("onDescriptorWriteV", value);
+            //Log.i("onDescriptorWriteP1", permission);
+            //Log.i("onDescriptorWriteS", Integer.toString(status));
+            BLEservicesRunning = false;
+            synchronized (serviceLock) {
+                serviceLock.notify();
+            }
         }
     };
 
-    private static int getAssignedNumber(UUID uuid) {
-        // Keep only the significant bits of the UUID
-        return (int) ((uuid.getMostSignificantBits() & 0x0000FFFF00000000L) >> 32);
+    private void updateCharacteristic(BluetoothGattCharacteristic characteristic){
+        TextView viewToUpdate = null;
+        for (BLE_Characteristic test_collection : allBLE) {
+            if (test_collection.BLE_Full == characteristic) {
+                viewToUpdate = test_collection.BLE_View;
+                break;
+            }
+        }
+        Integer char_id = BLE_Characteristic.getAssignedNumber(characteristic.getUuid());
+        String updateString = null;
+        if (char_id >= 0xF000) {
+            byte[] bytes = characteristic.getValue();
+            ByteBuffer so1 = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 0, 4)).order(ByteOrder.LITTLE_ENDIAN);
+            Float so1a = so1.getFloat();
+            updateString = so1a.toString();
+            Log.i("Received characteristic", Integer.toHexString(char_id));
+            Log.i("Float Method", so1a.toString());
+        } else if ((char_id < 0xF000) & (char_id >= 0xE000)) {
+            updateString = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString();
+            Log.i("Received characteristic", Integer.toHexString(char_id));
+            Log.i("Int 8", updateString);
+        } else if ((char_id < 0xE000) & (char_id >= 0xD000)) {
+            updateString = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString();
+            Log.i("Received characteristic", Integer.toHexString(char_id));
+            Log.i("Int 16", updateString);
+        } else if ((char_id < 0xD000) & (char_id >= 0xC000)) {
+            updateString = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 0).toString();
+            Log.i("Received characteristic", Integer.toHexString(char_id));
+            Log.i("Int 32", updateString);
+        }else {
+            Log.i("Unknown characteristic", Integer.toHexString(char_id));
+        }
+        if (updateString != null) {
+            Runnable t = new updateViews(viewToUpdate, updateString);
+            BLE_Test.this.runOnUiThread(t);
+        }
     }
 
-    private static Float floatSwapEndianness32(float test_float) {
-        // Keep only the significant bits of the UUID
-        int bits = Float.floatToIntBits(test_float);
 
-        Log.i("Original", Integer.toHexString(bits));
-        byte[] bytes = new byte[4];
-        bytes[0] = (byte)(bits & 0xff);
-        bytes[1] = (byte)((bits >> 8) & 0xff);
-        bytes[2] = (byte)((bits >> 16) & 0xff);
-        bytes[3] = (byte)((bits >> 24) & 0xff);
+    class setDescriptorThread implements Runnable{
 
-        byte[] final_bytes = new byte[] { bytes[0], bytes[1], bytes[2], bytes[3]};
+        setDescriptorThread(){
 
-        Log.i("New", Integer.toHexString(ByteBuffer.wrap(final_bytes).getInt()));
-
-        float myfloatvalue = ByteBuffer.wrap(final_bytes).getFloat();
-        return (myfloatvalue);
+        }
+        public void run() {
+            Log.i("Descriptor Thread", "Thread Started");
+            while(!Thread.currentThread().isInterrupted()){
+                while (descriptorSetQueue.isEmpty())
+                    try{
+                        Log.i("Descriptor Thread", "Queue has no objects, will wait");
+                        synchronized (initWriteLock){
+                            initWriteLock.notify();
+                        }
+                        synchronized (q) {
+                            q.wait();
+                        }
+                    } catch (InterruptedException iex) {
+                        Log.i("Descriptor Thread: ", iex.getMessage());
+                    }
+                Log.i("Descriptor Thread", "Must be something in queue");
+                while (BLEservicesRunning == true){
+                    try{
+                        Log.i("Descriptor Thread", "BLE Services being used, will wait");
+                        synchronized (serviceLock) {
+                            serviceLock.wait();
+                        }
+                    } catch (InterruptedException iex) {
+                        Log.i("Descriptor Thread: ", iex.getMessage());
+                    }
+                }
+                BluetoothGattDescriptor nextToWrite = descriptorSetQueue.peek();
+                BLEservicesRunning = true;
+                boolean write = mGatt.writeDescriptor(nextToWrite);
+                String resultW = String.valueOf(write);
+                Log.i("DidItWrite", resultW);
+                if (write == true){
+                    descriptorSetQueue.remove(nextToWrite);
+                }
+                Log.i("Queue size", Integer.toString(descriptorSetQueue.size()));
+                //Log.i("Queue", descriptorSetQueue.toString());
+            }
+        }
     }
 
-    String toBinary( byte[] bytes )
-    {
-        StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
-        for( int i = 0; i < Byte.SIZE * bytes.length; i++ )
-            sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0' : '1');
-        return sb.toString();
+    class updateViews implements Runnable {
+        TextView viewToChange;
+        String stringToSet;
+        public updateViews(TextView viewToChange, String stringToSet) {
+            this.viewToChange = viewToChange;
+            this.stringToSet = stringToSet;
+        }
+
+        public void run() {
+            viewToChange.setText(stringToSet);
+        }
     }
+
+    class initialReadThread implements Runnable{
+
+        initialReadThread(){
+
+        }
+        public void run() {
+            Log.i("Initial Read Thread", "Thread Started");
+            while (!descriptorSetQueue.isEmpty())
+                try{
+                    Log.i("Initial Read Thread", "Queue has objects, will wait");
+                    synchronized (initWriteLock) {
+                        initWriteLock.wait();
+                    }
+                } catch (InterruptedException iex) {
+                    Log.i("Initial Write Thread: ", iex.getMessage());
+                }
+            Log.i("Initial Write Thread", "Queue must be empty");
+            int[] write_characteristics = getResources().getIntArray(R.array.writeCharacteristics);
+            for (int i=0; i < write_characteristics.length; i++){
+                int temp_char = write_characteristics[i];
+                for (BLE_Characteristic temp_collection:allBLE){
+                    if(temp_char == temp_collection.BLE_Short){
+                        while (BLEservicesRunning == true){
+                            try{
+                                Log.i("Initial Write Thread", "BLE Services being used, will wait");
+                                synchronized (serviceLock) {
+                                    serviceLock.wait();
+                                }
+                            } catch (InterruptedException iex) {
+                                Log.i("Initial Write Thread: ", iex.getMessage());
+                            }
+                        }
+                        Log.i("Match of", Integer.toHexString(temp_collection.BLE_Short));
+                        BLEservicesRunning = true;
+                        Boolean resp = mGatt.readCharacteristic(temp_collection.BLE_Full);
+                        Log.i("Successful?", resp.toString());
+                        break;
+                    }
+                }
+            }
+
+            Log.i("Initial Write Thread", "Thread Done");
+
+        }
+    }
+
 }
