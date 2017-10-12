@@ -41,11 +41,15 @@ import org.apache.commons.lang.ArrayUtils;
 public class kegActivity extends AppCompatActivity {
     boolean deviceConnected=false;
 
+    float MAX_VOLTAGE = 4.2f;
+    float MIN_VOLTAGE = 2.5f;
+
     //System Views
     Button startButton;
-    Switch switchButton;
+    Switch switchButton, sizeButton;
     NumberPicker Digit1, Digit2, Digit3, Digit4;
-    ImageView Num1, Num2, Num3, Num4, Fullness;
+    ImageView Num1, Num2, Num3, Num4, Fullness, BatteryPic;
+    TextView BatteryText;
 
     private BluetoothAdapter mBluetoothAdapter;
     private Handler mHandler;
@@ -71,6 +75,11 @@ public class kegActivity extends AppCompatActivity {
         startButton = (Button) findViewById(R.id.buttonStart);
 
         switchButton = (Switch) findViewById(R.id.buttonSwitch);
+        sizeButton = (Switch) findViewById(R.id.buttonSize);
+
+        BatteryText = (TextView) findViewById(R.id.batteryText);
+        BatteryPic = (ImageView) findViewById(R.id.batteryPic);
+
         switchButton.setChecked(false);
         Num1 = (ImageView) findViewById(R.id.Display1);
         Num2 = (ImageView) findViewById(R.id.Display2);
@@ -138,6 +147,52 @@ public class kegActivity extends AppCompatActivity {
             toWriteTo.setValue(bits, BluetoothGattCharacteristic.FORMAT_UINT32, 0);
 
             Log.i("OnClickSend", "Sending " + total_string);
+            BLEservicesRunning = true;
+            boolean write = mGatt.writeCharacteristic(toWriteTo);
+            String result = String.valueOf(write);
+            Log.i("DidItSend", result);
+            while (BLEservicesRunning) {
+                try {
+                    Log.i("Write Thread", "BLE Services being used, will wait");
+                    synchronized (serviceLock) {
+                        serviceLock.wait();
+                    }
+                } catch (InterruptedException iex) {
+                    Log.i("Write Thread: ", iex.getMessage());
+                }
+            }
+            mGatt.readCharacteristic(toWriteTo);
+        }
+        else {
+            Log.i("onClickSend", "No char found!");
+        }
+    }
+
+    public void onClickSize(View view) {
+        int value;
+        if (sizeButton.isChecked()){
+            value = 1;
+        }
+        else {
+            value = 0;
+        }
+
+
+        BluetoothGattCharacteristic toWriteTo = null;
+
+        for (BLE_Characteristic temp : allBLE) {
+            if (temp.BLE_Short == 0xE003) {
+                toWriteTo = temp.BLE_Full;
+                break;
+            }
+        }
+
+        if (toWriteTo != null) {
+            toWriteTo.setValue(value, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+
+            String total_string = Integer.toString(value);
+
+            Log.i("OnClickSize", "Sending " + total_string);
             BLEservicesRunning = true;
             boolean write = mGatt.writeCharacteristic(toWriteTo);
             String result = String.valueOf(write);
@@ -506,6 +561,22 @@ public class kegActivity extends AppCompatActivity {
                 final Integer ImageNum = doFullness(Integer.parseInt(stringToSet));
                 Fullness.setImageResource(ImageNum);
             }
+
+            else if (charID == 0xE003){
+                Log.i("Keg Size is", stringToSet);
+                if (stringToSet == "1") {
+                    sizeButton.setChecked(true);
+                    sizeButton.setText("Full Size Keg");
+                }
+                else if (stringToSet == "0"){
+                    sizeButton.setChecked(false);
+                    sizeButton.setText("Mini Keg");
+                }
+                else {
+                    Log.i("Error: Keg Size is", stringToSet);
+                }
+            }
+
             else if (charID == 0xF001){
                 Log.i("Ref Pressure is", stringToSet);
                 Character Char1 = stringToSet.charAt(0);
@@ -531,6 +602,32 @@ public class kegActivity extends AppCompatActivity {
                 }
                 catch (StringIndexOutOfBoundsException e){
                     Digit4.setValue(0);
+                }
+            }
+            else if (charID == 0xF00B){
+                Log.i("Battery is", stringToSet);
+                Float battery_voltage = Float.parseFloat(stringToSet);
+                Float adjusted = battery_voltage - MIN_VOLTAGE;
+                Float range = MAX_VOLTAGE - MIN_VOLTAGE;
+                Float percentage = adjusted / range;
+                String total_string = String.format("%.0f", percentage * 100) + "%";
+                BatteryText.setText(total_string);
+                Integer theID;
+                if (percentage > 0.75){
+                    theID = getResources().getIdentifier("bfull", "drawable", getPackageName());
+                    BatteryPic.setImageResource(theID);
+                }
+                if ((percentage < 0.75) & (percentage > 0.5)){
+                    theID = getResources().getIdentifier("b34", "drawable", getPackageName());
+                    BatteryPic.setImageResource(theID);
+                }
+                if ((percentage < 0.5) & (percentage > 0.25)){
+                    theID = getResources().getIdentifier("b12", "drawable", getPackageName());
+                    BatteryPic.setImageResource(theID);
+                }
+                if (percentage < 0.25){
+                    theID = getResources().getIdentifier("b14", "drawable", getPackageName());
+                    BatteryPic.setImageResource(theID);
                 }
             }
         }

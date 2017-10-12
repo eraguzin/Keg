@@ -58,7 +58,7 @@
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
-                android:hint="@string/status" />
+                android:hint="@string/not_connected" />
         </TableRow>
 
         <TableRow
@@ -459,26 +459,26 @@
         </TableRow>
 
         <TableRow
-            android:id="@+id/DebugRow"
+            android:id="@+id/SizeRow"
             style="?android:attr/buttonBarButtonStyle">
 
             <TextView
-                android:id="@+id/labelDebug"
+                android:id="@+id/labelSize"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
-                android:text="@string/debug_view" />
+                android:text="@string/keg_size" />
 
             <TextView
-                android:id="@+id/receiveDebug"
+                android:id="@+id/receiveSize"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:hint="@string/from_arduino" />
 
-            <EditText android:id="@+id/fieldDebug"
+            <EditText android:id="@+id/fieldSize"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
@@ -487,7 +487,7 @@
                 android:tag="m"
                 android:hint="@string/to_arduino" />
 
-            <Button android:id="@+id/buttonDebug"
+            <Button android:id="@+id/buttonSize"
                 android:layout_weight="1"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"

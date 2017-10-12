@@ -16,14 +16,17 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:windowSoftInputMode="stateHidden">
-        <activity android:name=".BLE_Test">
+        <activity android:name=".BLE_Test"
+            android:screenOrientation="portrait">>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".kegActivity"></activity>
+        <activity android:name=".kegActivity"
+            android:screenOrientation="portrait">
+        </activity>
     </application>
 
 </manifest>

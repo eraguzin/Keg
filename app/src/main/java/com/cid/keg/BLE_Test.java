@@ -23,6 +23,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -71,9 +72,10 @@ public class BLE_Test extends AppCompatActivity {
         stopButton = (Button) findViewById(R.id.buttonStop);
         Status1 = (TextView) findViewById(R.id.Status1);
 
+
+
         switchButton = (Switch) findViewById(R.id.buttonSwitch);
         switchButton.setChecked(false);
-        Status1.setText(getApplicationContext().getString(R.string.not_connected));
 
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "Bluetooth Low Energy Not Supported",
@@ -211,6 +213,7 @@ public class BLE_Test extends AppCompatActivity {
     private ScanCallback mScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
+            Status1.setText(getApplicationContext().getString(R.string.startup1));
             Log.i("callbackType", String.valueOf(callbackType));
             Log.i("result", result.toString());
             BluetoothDevice btDevice = result.getDevice();
@@ -235,7 +238,11 @@ public class BLE_Test extends AppCompatActivity {
         if (mGatt == null) {
             mGatt = device.connectGatt(this, false, gattCallback);
             scanLeDevice(false);// will stop after first device detection
-            deviceConnected =true;
+            deviceConnected = true;
+        }
+        else{
+            Log.i("mGatt", "Already Existed");
+            mGatt = device.connectGatt(this, false, gattCallback);
         }
     }
 
@@ -243,6 +250,8 @@ public class BLE_Test extends AppCompatActivity {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             //status of 0 if operation succeeds
+            Runnable t = new updateViews(Status1, getApplicationContext().getString(R.string.startup2));
+            BLE_Test.this.runOnUiThread(t);
             Log.i("onConnectionStateChange", "Status: " + status);
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
@@ -262,6 +271,8 @@ public class BLE_Test extends AppCompatActivity {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            Runnable t = new updateViews(Status1, getApplicationContext().getString(R.string.startup3));
+            BLE_Test.this.runOnUiThread(t);
             List<BluetoothGattService> services = gatt.getServices();
             int[] acceptable_services = getResources().getIntArray(R.array.Services);
             int[] notification_characteristics = getResources().getIntArray(R.array.notificationCharacteristics);
@@ -311,6 +322,8 @@ public class BLE_Test extends AppCompatActivity {
                     new Thread(init).start();
                 }
             }
+            Runnable t2 = new updateViews(Status1, getApplicationContext().getString(R.string.connected));
+            BLE_Test.this.runOnUiThread(t2);
         }
 
         @Override

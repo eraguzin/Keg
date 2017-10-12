@@ -99,11 +99,11 @@ public class BLE_Characteristic {
                 break;
 
             case (0xE003):
-                corresponding_view = (TextView) (context.findViewById(R.id.receiveDebug));
-                Log.i("Found", "BLE_Characteristic Class --> Found Debug");
+                corresponding_view = (TextView) (context.findViewById(R.id.receiveSize));
+                Log.i("Found", "BLE_Characteristic Class --> Found Keg Size");
                 break;
 
-            case (0xD005):
+            case (0xF00B):
                 corresponding_view = (TextView) (context.findViewById(R.id.receivebatt));
                 Log.i("Found", "BLE_Characteristic Class --> Found Battery");
                 break;
